@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🗺️ GPS Mapping - Pic-View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(ellipse at center, #0a0f1a 0%, #000000 100%);
+            color: #00ffcc;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            text-shadow: 0 0 8px #00ffc8;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            background: #000;
+            color: #00ffcc;
+            border: 2px dashed #00ffc84d;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        #map {
+            height: 400px;
+            width: 100%;
+            max-width: 800px;
+            margin: 20px auto;
+            border-radius: 12px;
+            box-shadow: 0 0 20px #00ffcc44;
+            display: none;
+        }
+
+        #locationInfo {
+            margin: 10px auto;
+            font-size: 0.95rem;
+            color: #00ffcc;
+        }
+
+        .back {
+            margin-top: 20px;
+        }
+
+        .back a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.85rem;
+            color: #00ffc870;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🗺️ GPS Mapping from Image</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <div id="locationInfo">Upload an image with GPS EXIF data to see the location.</div>
+    <div id="map"></div>
+
+    <div class="back">
+        <a href="index.html">← Back to Home</a>
+    </div>
+    <footer>© 2025 Pic-View | GeoLocation Forensics</footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const locationInfo = document.getElementById('locationInfo');
+        const mapContainer = document.getElementById('map');
+        let map;
+
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                const img = new Image();
+                img.onload = function () {
+                    EXIF.getData(img, function () {
+                        const lat = EXIF.getTag(this, "GPSLatitude");
+                        const lon = EXIF.getTag(this, "GPSLongitude");
+                        const latRef = EXIF.getTag(this, "GPSLatitudeRef") || "N";
+                        const lonRef = EXIF.getTag(this, "GPSLongitudeRef") || "E";
+
+                        if (!lat || !lon) {
+                            locationInfo.textContent = "❌ No GPS data found in this image.";
+                            mapContainer.style.display = 'none';
+                            return;
+                        }
+
+                        const latitude = convertToDecimal(lat, latRef);
+                        const longitude = convertToDecimal(lon, lonRef);
+
+                        locationInfo.textContent = `📍 Coordinates: ${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+                        showMap(latitude, longitude);
+                        reverseGeocode(latitude, longitude);
+                    });
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function convertToDecimal(coord, ref) {
+            const d = coord[0];
+            const m = coord[1];
+            const s = coord[2];
+            let dec = d + m / 60 + s / 3600;
+            if (ref === "S" || ref === "W") dec *= -1;
+            return dec;
+        }
+
+        function showMap(lat, lon) {
+            mapContainer.style.display = "block";
+            if (map) {
+                map.setView([lat, lon], 13);
+                return;
+            }
+            map = L.map('map').setView([lat, lon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19
+            }).addTo(map);
+            L.marker([lat, lon]).addTo(map)
+                .bindPopup("📍 Image Location")
+                .openPopup();
+        }
+
+        function reverseGeocode(lat, lon) {
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        locationInfo.textContent += `\n📌 Location: ${data.display_name}`;
+                    }
+                }).catch(() => {
+                    locationInfo.textContent += `\n⚠️ Reverse geocoding failed.`;
+                });
+        }
+    </script>
+</body>
+
+</html>

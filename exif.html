@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📸 EXIF Viewer - Pic-View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+    <style>
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(ellipse at center, #0a0f1a 0%, #000000 100%);
+            color: #00ffcc;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            text-shadow: 0 0 8px #00ffc8;
+            margin-bottom: 30px;
+        }
+
+        .uploader {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        input[type="file"] {
+            background: #000;
+            color: #00ffcc;
+            border: 2px dashed #00ffc84d;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        #exifData {
+            background: #011114;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px #00ffcc3f;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.85rem;
+            color: #00ffc870;
+        }
+
+        .back {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .back a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>📸 EXIF Metadata Viewer</h1>
+
+    <div class="uploader">
+        <input type="file" id="imageInput" accept="image/*">
+    </div>
+
+    <div id="exifData">Select an image to view its EXIF metadata.</div>
+
+    <div class="back">
+        <a href="index.html">← Back to Home</a>
+    </div>
+
+    <footer>© 2025 Pic-View | EXIF Analyzer</footer>
+
+    <script>
+        document.getElementById("imageInput").addEventListener("change", function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function () {
+                const img = new Image();
+                img.onload = function () {
+                    EXIF.getData(img, function () {
+                        const allMetaData = EXIF.getAllTags(this);
+                        let output = "";
+                        for (const tag in allMetaData) {
+                            output += `${tag}: ${allMetaData[tag]}\n`;
+                        }
+                        document.getElementById("exifData").textContent = output || "❌ No EXIF metadata found.";
+                    });
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+</body>
+
+</html>

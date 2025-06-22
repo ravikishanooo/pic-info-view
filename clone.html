@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🪞 Clone Detection - Pic-View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(ellipse at center, #0a0f1a 0%, #000000 100%);
+            color: #00ffcc;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            text-shadow: 0 0 8px #00ffc8;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            background: #000;
+            color: #00ffcc;
+            border: 2px dashed #00ffc84d;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin: 20px auto;
+            display: block;
+            border: 2px solid #00ffcc33;
+            border-radius: 12px;
+        }
+
+        .back {
+            margin-top: 20px;
+        }
+
+        .back a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.85rem;
+            color: #00ffc870;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🪞 Clone Detection</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <canvas id="canvas"></canvas>
+
+    <div class="back">
+        <a href="index.html">← Back to Home</a>
+    </div>
+    <footer>© 2025 Pic-View | Clone Forgery Detection</footer>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    detectClones(img);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function detectClones(img) {
+            const blockSize = 8;
+            const w = img.width;
+            const h = img.height;
+            const data = ctx.getImageData(0, 0, w, h).data;
+            const blocks = [];
+
+            for (let y = 0; y < h - blockSize; y += blockSize) {
+                for (let x = 0; x < w - blockSize; x += blockSize) {
+                    const block = [];
+                    for (let by = 0; by < blockSize; by++) {
+                        for (let bx = 0; bx < blockSize; bx++) {
+                            const idx = ((y + by) * w + (x + bx)) * 4;
+                            block.push(data[idx], data[idx + 1], data[idx + 2]);
+                        }
+                    }
+                    blocks.push({ x, y, hash: block.join(',') });
+                }
+            }
+
+            const clones = [];
+            for (let i = 0; i < blocks.length; i++) {
+                for (let j = i + 1; j < blocks.length; j++) {
+                    if (blocks[i].hash === blocks[j].hash) {
+                        clones.push([blocks[i], blocks[j]]);
+                    }
+                }
+            }
+
+            ctx.strokeStyle = "#ff00ff";
+            ctx.lineWidth = 2;
+            clones.forEach(pair => {
+                pair.forEach(b => {
+                    ctx.strokeRect(b.x, b.y, blockSize, blockSize);
+                });
+            });
+
+            if (clones.length === 0) {
+                alert("✅ No obvious clone regions found. (Simple hash match)");
+            } else {
+                alert(`⚠️ Possible clone regions detected: ${clones.length} blocks`);
+            }
+        }
+    </script>
+</body>
+
+</html>

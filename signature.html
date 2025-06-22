@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧾 File Signature Checker - Pic-View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(ellipse at center, #0a0f1a 0%, #000000 100%);
+            color: #00ffcc;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.2rem;
+            text-shadow: 0 0 8px #00ffc8;
+            margin-bottom: 30px;
+        }
+
+        .uploader {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        input[type="file"] {
+            background: #000;
+            color: #00ffcc;
+            border: 2px dashed #00ffc84d;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        #result {
+            background: #011114;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 20px #00ffcc3f;
+            white-space: pre-wrap;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            font-size: 0.85rem;
+            color: #00ffc870;
+        }
+
+        .back {
+            display: block;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .back a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧾 File Signature Checker</h1>
+
+    <div class="uploader">
+        <input type="file" id="fileInput">
+    </div>
+
+    <div id="result">Select a file to analyze its signature.</div>
+
+    <div class="back">
+        <a href="index.html">← Back to Home</a>
+    </div>
+
+    <footer>© 2025 Pic-View | File Type Identifier</footer>
+
+    <script>
+        const signatures = {
+            'ffd8ff': 'JPEG Image',
+            '89504e47': 'PNG Image',
+            '47494638': 'GIF Image',
+            '25504446': 'PDF Document',
+            '504b0304': 'ZIP Archive / DOCX / APK',
+            '377abcaf': '7-Zip Archive',
+            '52617221': 'RAR Archive',
+            '3c3f786d': 'XML Document',
+            '494433': 'MP3 Audio (ID3v2)',
+            '000001ba': 'MPEG Video',
+            '00000018': 'MP4 Video',
+            '4d5a': 'Windows Executable (EXE)'
+        };
+
+        document.getElementById("fileInput").addEventListener("change", function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const bytes = new Uint8Array(e.target.result);
+                let hexSignature = "";
+                for (let i = 0; i < 4; i++) {
+                    hexSignature += bytes[i].toString(16).padStart(2, '0');
+                }
+
+                let matched = "Unknown file type";
+                for (const sig in signatures) {
+                    if (hexSignature.startsWith(sig)) {
+                        matched = signatures[sig];
+                        break;
+                    }
+                }
+
+                document.getElementById("result").textContent =
+                    `🧬 Raw Signature: ${hexSignature.toUpperCase()}\n📄 Detected Type: ${matched}`;
+            };
+            reader.readAsArrayBuffer(file.slice(0, 12)); // Read only first few bytes
+        });
+    </script>
+</body>
+
+</html>

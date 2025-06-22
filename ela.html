@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🔍 ELA Analyzer - Pic-View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(ellipse at center, #0a0f1a 0%, #000000 100%);
+            color: #00ffcc;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            text-shadow: 0 0 8px #00ffc8;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            background: #000;
+            color: #00ffcc;
+            border: 2px dashed #00ffc84d;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            margin: 20px auto;
+            display: block;
+            border: 2px solid #00ffcc33;
+            border-radius: 12px;
+        }
+
+        .back {
+            margin-top: 20px;
+        }
+
+        .back a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.85rem;
+            color: #00ffc870;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 Error Level Analysis (ELA)</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <canvas id="originalCanvas"></canvas>
+    <canvas id="elaCanvas"></canvas>
+
+    <div class="back">
+        <a href="index.html">← Back to Home</a>
+    </div>
+    <footer>© 2025 Pic-View | Error Level Analyzer</footer>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const originalCanvas = document.getElementById('originalCanvas');
+        const elaCanvas = document.getElementById('elaCanvas');
+
+        imageInput.addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const img = new Image();
+                img.onload = function () {
+                    // Draw original image
+                    const width = img.width;
+                    const height = img.height;
+                    originalCanvas.width = elaCanvas.width = width;
+                    originalCanvas.height = elaCanvas.height = height;
+
+                    const ctxOriginal = originalCanvas.getContext('2d');
+                    ctxOriginal.drawImage(img, 0, 0);
+
+                    // Compress original image to JPEG (low quality)
+                    const jpegData = originalCanvas.toDataURL('image/jpeg', 0.6); // lower = more compression
+                    const compressedImg = new Image();
+                    compressedImg.onload = function () {
+                        const ctxCompressed = elaCanvas.getContext('2d');
+                        ctxCompressed.clearRect(0, 0, width, height);
+                        ctxCompressed.drawImage(compressedImg, 0, 0);
+
+                        // Compare pixels
+                        const originalData = ctxOriginal.getImageData(0, 0, width, height);
+                        const compressedData = ctxCompressed.getImageData(0, 0, width, height);
+                        const elaData = ctxOriginal.createImageData(width, height);
+
+                        for (let i = 0; i < originalData.data.length; i += 4) {
+                            elaData.data[i] = Math.abs(originalData.data[i] - compressedData.data[i]) * 10;     // R
+                            elaData.data[i + 1] = Math.abs(originalData.data[i + 1] - compressedData.data[i + 1]) * 10; // G
+                            elaData.data[i + 2] = Math.abs(originalData.data[i + 2] - compressedData.data[i + 2]) * 10; // B
+                            elaData.data[i + 3] = 255; // Alpha
+                        }
+
+                        ctxCompressed.putImageData(elaData, 0, 0);
+                    };
+                    compressedImg.src = jpegData;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    </script>
+</body>
+
+</html>

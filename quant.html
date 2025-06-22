@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>🧬 JPEG Quantization Analyzer - Pic-View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Orbitron', monospace;
+            background: radial-gradient(ellipse at center, #0a0f1a 0%, #000000 100%);
+            color: #00ffcc;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            text-shadow: 0 0 8px #00ffc8;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            background: #000;
+            color: #00ffcc;
+            border: 2px dashed #00ffc84d;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        table {
+            margin: 20px auto;
+            border-collapse: collapse;
+            color: #00ffcc;
+            border: 1px solid #00ffcc33;
+        }
+
+        td {
+            padding: 5px 10px;
+            border: 1px solid #00ffcc33;
+        }
+
+        .back {
+            margin-top: 20px;
+        }
+
+        .back a {
+            color: #00ffcc;
+            text-decoration: none;
+        }
+
+        .back a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.85rem;
+            color: #00ffc870;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧬 JPEG Quantization Table Analyzer</h1>
+    <input type="file" id="imageInput" accept="image/jpeg">
+    <div id="output">Upload a JPEG image to view its quantization tables.</div>
+
+    <div class="back">
+        <a href="index.html">← Back to Home</a>
+    </div>
+    <footer>© 2025 Pic-View | JPEG Q-Table Analyzer</footer>
+
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function () {
+            const file = this.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const bytes = new Uint8Array(e.target.result);
+                const tables = extractQuantTables(bytes);
+                if (tables.length === 0) {
+                    document.getElementById('output').innerText = "❌ No quantization tables found.";
+                } else {
+                    let html = "";
+                    tables.forEach((table, i) => {
+                        html += `<h3>Table ${i + 1}</h3><table><tr>`;
+                        table.forEach((val, idx) => {
+                            html += `<td>${val}</td>`;
+                            if ((idx + 1) % 8 === 0) html += '</tr><tr>';
+                        });
+                        html += '</tr></table>';
+                    });
+                    document.getElementById('output').innerHTML = html;
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function extractQuantTables(bytes) {
+            const tables = [];
+            for (let i = 0; i < bytes.length - 1; i++) {
+                if (bytes[i] === 0xFF && bytes[i + 1] === 0xDB) {
+                    const length = (bytes[i + 2] << 8) + bytes[i + 3];
+                    let ptr = i + 4;
+                    while (ptr < i + 2 + length) {
+                        const pqTq = bytes[ptr++];
+                        const precision = pqTq >> 4;
+                        const table = [];
+                        for (let j = 0; j < 64; j++) {
+                            table.push(precision === 0 ? bytes[ptr++] : (bytes[ptr++] << 8) + bytes[ptr++]);
+                        }
+                        tables.push(table);
+                    }
+                }
+            }
+            return tables;
+        }
+    </script>
+</body>
+
+</html>
